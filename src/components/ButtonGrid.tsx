@@ -1,13 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
+import * as Tone from "tone"
 
-export default function ButtonGrid() {
-      interface ButtonItem {
-        id: number
-        isActive: boolean
-        label: string
-      }
+    interface ButtonItem {
+        id: number;
+        isActive: boolean;
+        label: string;
+    }
 
-      const [buttons, setButtons] = useState<ButtonItem[]>([])
+    interface Props {
+        buttons: ButtonItem[];
+        setButtons: React.Dispatch<React.SetStateAction<ButtonItem[]>>;
+        toggleButton: (id: number) => void;
+    }
+
+export default function ButtonGrid({buttons, setButtons, toggleButton}: Props) {
+    const synthRef = useRef<Tone.Synth | null>(null)
+
+
+      useEffect(() => {
+          initButtons();
+          synthRef.current = new Tone.Synth().toDestination();
+      }, []);
+ 
 
       const initButtons = (amount: number = 16): void => {
         setButtons(
@@ -19,23 +33,24 @@ export default function ButtonGrid() {
         )
       }
 
-      const toggleButton = (id: number) => {
-        setButtons(prev => 
-          prev.map(b => b.id === id ? {...b, isActive: !b.isActive} : b)
-        )
+
+
+      const playSound = (id: number) => {
+      const note = id <= 8 ? `C${4 + (id % 4)}` : `E${4 + (id % 4)}`;
+        synthRef.current?.triggerAttackRelease(note, "8n")
       }
 
-      useEffect(() => {
-        initButtons()   
-      }, [])
- 
+
   return (
       <div className="buttonGrid">
           {buttons.map((button) => (
               <button
                   key={button.id}
                   className="buttonItem"
-                  onClick={() => toggleButton(button.id)}
+                  onClick={() => {
+                    toggleButton(button.id)
+                    if (!button.isActive) playSound(button.id)
+                  }}
                   style={{
                       backgroundColor: button.isActive ? "#6fcf97" : "#eee",
                   }}
